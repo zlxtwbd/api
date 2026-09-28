@@ -7,7 +7,7 @@
       "key": "枫叶4k",
       "name": "枫叶4k",
       "type": 3,
-      "api": "./py/枫叶4k.py",
+      "api": "./枫叶4k.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -43,7 +43,7 @@
       "key": "4K影视",
       "name": "4K影视",
       "type": 3,
-      "api": "./py/4k影视.py",
+      "api": "./4k影视.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -52,7 +52,7 @@
       "key": "4K星辰",
       "name": "4K星辰",
       "type": 3,
-      "api": "./py/4k星辰.py",
+      "api": "./4k星辰.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
