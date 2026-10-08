@@ -175,7 +175,7 @@
       "key": "央库云",
       "name": "央库云",
       "type": 3,
-      "api": "./py_央库云.py",
+      "api": "https://gh-proxy.org/https://github.com/zlxtwbd/api/blob/main/py_%E5%A4%AE%E5%BA%93%E4%BA%91.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
