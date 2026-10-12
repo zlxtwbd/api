@@ -36,14 +36,23 @@ function getLiveUrl(channelId, quality) {
 
 // ==================== 二进制助手（Uint8Array 版，替代原 Buffer 依赖） ====================
 function bytesToBase64(bytes) {
+    // fix: 逐字符 out += 对 MB 级 TS 是 O(n²)（真机 30s+ 超时实锤）——分块收集
+    // 一次性 join，O(n)
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const CHUNK = 0x7FFE; // 3 的倍数（32766）——分块 base64 块边界必须落在 3 字节组上，否则每边界 2 字节被独立编码成 "xxx="，与下一块首字节的标准合并编码错位（解码端 +1字节/边界，82 边界=+82 字节 → TS 全错位花屏，2026-09-28 实锤）
     let out = '';
-    for (let i = 0; i < bytes.length; i += 3) {
-        const b0 = bytes[i], b1 = bytes[i + 1], b2 = bytes[i + 2];
-        out += alphabet[b0 >> 2];
-        out += alphabet[((b0 & 3) << 4) | ((b1 == null ? 0 : b1) >> 4)];
-        out += b1 == null ? '=' : alphabet[((b1 & 15) << 2) | ((b2 == null ? 0 : b2) >> 6)];
-        out += b2 == null ? '=' : alphabet[b2 & 63];
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+        const end = Math.min(i + CHUNK, bytes.length);
+        const parts = new Array(((end - i) / 3 + 1) | 0);
+        let p = 0;
+        for (let j = i; j < end; j += 3) {
+            const b0 = bytes[j], b1 = bytes[j + 1], b2 = bytes[j + 2];
+            parts[p++] = alphabet[b0 >> 2];
+            parts[p++] = alphabet[((b0 & 3) << 4) | ((b1 == null ? 0 : b1) >> 4)];
+            parts[p++] = b1 == null ? '=' : alphabet[((b1 & 15) << 2) | ((b2 == null ? 0 : b2) >> 6)];
+            parts[p++] = b2 == null ? '=' : alphabet[b2 & 63];
+        }
+        out += parts.join('');
     }
     return out;
 }
@@ -89,6 +98,7 @@ async function ensureWasm(ctx) {
 function decryptH264InPlace(ctx, h264Data) {
     const mod = this._cntvMod;
     let curDate = Date.now().toString();
+    let curDateBytes = Array.from(curDate, ch => ch.charCodeAt(0));
     const MemoryExtend = 2048;
     let vmpTag = '';
 
@@ -98,7 +108,7 @@ function decryptH264InPlace(ctx, h264Data) {
     function _common(o) {
         const memory = mod._jsmalloc(curDate.length + MemoryExtend);
         mod.HEAP8.fill(0, memory, memory + curDate.length + MemoryExtend);
-        mod.HEAP8.set(Array.from(curDate, e => e.charCodeAt(0)), memory);
+        mod.HEAP8.set(curDateBytes, memory);
         let ret;
         switch (o) {
             case 'InitPlayer': ret = mod._CNTV_InitPlayer(memory); break;
@@ -117,28 +127,32 @@ function decryptH264InPlace(ctx, h264Data) {
     const UnInitPlayer = () => _common('UnInitPlayer');
     const UpdatePlayer = () => _common('UpdatePlayer');
 
+    // fix: 分发表外提（原版每 NAL 重建 9 个闭包，纯 GC 压力）
+    const StaticCallModuleVod = {
+        H264NalSet: (e, t, i, n, r) => e._CNTV_jsdecVOD7(t, i, n, r),
+        H265NalData: (e, t, i, n, r) => e._CNTV_jsdecVOD6(t, i, n, r),
+        AVS1AudioKey: (e, t, i, n, r) => e._CNTV_jsdecVOD5(t, i, n, r),
+        HEVC2AAC: (e, t, i, n, r) => e._CNTV_jsdecVOD4(t, i, n, r),
+        HASHMap: (e, t, i, n, r) => e._CNTV_jsdecVOD3(t, i, n, r),
+        BASE64Dec: (e, t, i, n, r) => e._CNTV_jsdecVOD2(t, i, n, r),
+        MediaSession: (e, t, i, n, r) => e._CNTV_jsdecVOD1(t, i, n, r),
+        Mp4fragment: (e, t, i, n, r) => e._CNTV_jsdecVOD0(t, i, n, r),
+        MpegAudio: (e, t, i, n, r) => e._CNTV_jsdecVOD8(t, i, n, r),
+    };
+    const pageHostBytes = Array.from('https://tv.cctv.com', ch => ch.charCodeAt(0));
+    const pageHostLen = pageHostBytes.length;
+
     function decryptToBuf(srcBuf, destBuf) {
         const pageHost = 'https://tv.cctv.com';
         const addr = mod._jsmalloc(srcBuf.length + MemoryExtend);
-        const StaticCallModuleVod = {
-            H264NalSet: (e, t, i, n, r) => e._CNTV_jsdecVOD7(t, i, n, r),
-            H265NalData: (e, t, i, n, r) => e._CNTV_jsdecVOD6(t, i, n, r),
-            AVS1AudioKey: (e, t, i, n, r) => e._CNTV_jsdecVOD5(t, i, n, r),
-            HEVC2AAC: (e, t, i, n, r) => e._CNTV_jsdecVOD4(t, i, n, r),
-            HASHMap: (e, t, i, n, r) => e._CNTV_jsdecVOD3(t, i, n, r),
-            BASE64Dec: (e, t, i, n, r) => e._CNTV_jsdecVOD2(t, i, n, r),
-            MediaSession: (e, t, i, n, r) => e._CNTV_jsdecVOD1(t, i, n, r),
-            Mp4fragment: (e, t, i, n, r) => e._CNTV_jsdecVOD0(t, i, n, r),
-            MpegAudio: (e, t, i, n, r) => e._jsdecVOD(i, n, r),
-        };
         function StaticCallModuleVodAPI(e, t, i, n, r, a) {
             return StaticCallModuleVod[a](e, t, i, n, r);
         }
 
         mod.HEAP8.set(srcBuf, addr);
-        mod.HEAP8.set(Array.from(pageHost, e => e.charCodeAt(0)), addr + srcBuf.length);
+        mod.HEAP8.set(pageHostBytes, addr + srcBuf.length);
         const addr2 = mod._jsmalloc(curDate.length);
-        mod.HEAP8.set(Array.from(curDate, e => e.charCodeAt(0)), addr2);
+        mod.HEAP8.set(curDateBytes, addr2);
 
         const keys = Object.keys(StaticCallModuleVod);
         for (const i in vmpTag)
@@ -191,10 +205,15 @@ function decryptH264InPlace(ctx, h264Data) {
     const hasType25 = nalUnits.some(nal => nal.nalUnitType === 25);
     let shouldDecrypt = hasType25 ? false : true;
     curDate = Date.now().toString();
+    curDateBytes = Array.from(curDate, ch => ch.charCodeAt(0));
     InitPlayer();
 
     for (const nal of nalUnits) {
-        UpdatePlayer();
+        UpdatePlayer(); // 每 NAL 必须刷新 vmpTag（2026-09-14 花屏实锤修复）：
+                        // _CNTV_UpdatePlayer 是有状态推进的状态机而非纯函数，
+                        // 每个 NAL 的 vmpTag 都不同——外提到循环外只调一次会让
+                        // 除首 NAL 外全部用错密钥流选择器 → 花屏。性能优化不
+                        // 能动它，解密加速只能走 wasm 引擎/流式优化
         const nalLen = nal.dataLen + 1;
         if (nalLen > maxDecryptBufSize) continue;
         tempDecryptBuf[0] = nal.header;
@@ -288,7 +307,8 @@ async function parseTS(ctx, originalTS) {
     }
 
     // 解密（原地）
-    decryptH264InPlace.call(this, h264Data);
+    decryptH264InPlace.call(this, ctx, h264Data); // fix: 签名为 (ctx, h264Data) 双参，原移植漏传 ctx
+
 
     // 第三遍：写回 TS（解密数据填充进视频 PES 载荷，余量补 0xFF）
     let rpos = 0;
