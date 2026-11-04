@@ -472,68 +472,6 @@
   ],
   "parses": [
   ],
-    {
-      "name": "VIP1",
-      "type": 0,
-      "url": "https://jx.xmflv.com/?url="
-    },
-    {
-      "name": "VIP2",
-      "type": 0,
-      "url": "https://jx.hls.one/?url="
-    },
-    {
-      "name": "VIP3",
-      "type": 0,
-      "url": "https://jx.77flv.cc/?url="
-    },
-    {
-      "name": "VIP4",
-      "type": 0,
-      "url": "https://yparse.ik9.cc/index.php?url="
-    },
-    {
-      "name": "VIP5",
-      "type": 0,
-      "url": "https://bd.jx.cn/?url="
-    },
-    {
-      "name": "VIP6",
-      "type": 0,
-      "url": "https://jx.xymp4.cc/?url="
-    },
-    {
-      "name": "VIP7",
-      "type": 0,
-      "url": "https://www.ckplayer.vip/jiexi/?url="
-    },
-    {
-      "name": "VIP8",
-      "type": 0,
-      "url": "https://jx.2s0.cn/player/?url="
-    }
-  ],
-  "flags": [
-    "youku",
-    "qq",
-    "iqiyi",
-    "qiyi",
-    "letv",
-    "sohu",
-    "tudou",
-    "pptv",
-    "mgtv",
-    "wasu",
-    "migu",
-    "migo",
-    "alivc",
-    "1905",
-    "douyin",
-    "xigua",
-    "leshi",
-    "bilibili",
-    "renrenmi"
-  ],
   "doh": [
         {
             "ips": [
