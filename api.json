@@ -20,8 +20,8 @@
       "ext": "https://ghproxy.net/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.js"
     },
       {
-      "key": "52影院_修复v4",
-      "name": "52影院_修复v4",
+      "key": "52影院",
+      "name": "52影院",
       "type": 3,
       "api": "./52影院_修复v4.py",
       "searchable": 1,
@@ -56,8 +56,8 @@
       "filterable": 1
     },
     {
-      "key": "apiv3063麦田影院",
-      "name": "apiv3063麦田影院",
+      "key": "麦田影院",
+      "name": "麦田影院",
       "type": 3,
       "api": "./apiv3063麦田影院.py",
       "searchable": 1,
@@ -74,19 +74,19 @@
       "filterable": 1
     },
     {
-      "key": "DSYS",
-      "name": "DSYS",
+      "key": "瓜子影视",
+      "name": "瓜子影视",
       "type": 3,
-      "api": ".DSYS.py",
+      "api": "./瓜子.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
     },
     {
-      "key": "哔哩大全",
-      "name": "哔哩大全",
+      "key": "影视大全",
+      "name": "影视大全",
       "type": 3,
-      "api": "./哔哩大全.py",
+      "api": "./影视大全.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -101,10 +101,10 @@
       "filterable": 1
     },
     {
-      "key": "LIBVIO[盘]",
-      "name": "LIBVIO[盘]",
+      "key": "云朵影视",
+      "name": "云朵影视",
       "type": 3,
-      "api": "./LIBVIO[盘].py",
+      "api": "./云朵影视.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -128,8 +128,8 @@
       "filterable": 1
     },
     {
-      "key": "爱瓜TVAPP",
-      "name": "爱瓜TVAPP",
+      "key": "爱瓜TV",
+      "name": "爱瓜TV",
       "type": 3,
       "api": "./py_爱瓜TVAPP.py",
       "searchable": 1,
@@ -146,10 +146,10 @@
       "filterable": 1
     },
     {
-      "key": "美柏",
-      "name": "美柏",
+      "key": "云端影视",
+      "name": "云端影视",
       "type": 3,
-      "api": "./py_美柏.py",
+      "api": "./云端影视.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -164,19 +164,19 @@
       "filterable": 1
     },
     {
-      "key": "推特APP",
-      "name": "推特APP",
+      "key": "兔扫4k",
+      "name": "兔扫4k",
       "type": 3,
-      "api": "./py_推特APP.py",
+      "api": "./兔扫4k.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
     },
     {
-      "key": "哇哇APP",
-      "name": "哇哇APP",
+      "key": "努努影院",
+      "name": "努努影院",
       "type": 3,
-      "api": "./py_哇哇APP.py",
+      "api": "./努努影院.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -209,10 +209,10 @@
       "filterable": 1
     },
     {
-      "key": "svip短剧",
-      "name": "svip短剧",
+      "key": "周六影库",
+      "name": "周六影库",
       "type": 3,
-      "api": "./svip短剧.py",
+      "api": "./周六影库.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -227,10 +227,10 @@
       "filterable": 1
     },
     {
-      "key": "八天电影",
-      "name": "八天电影",
+      "key": "奈飞工厂",
+      "name": "奈飞工厂",
       "type": 3,
-      "api": "./八天电影.py",
+      "api": "./奈飞工厂.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -245,10 +245,10 @@
       "filterable": 1
     },
     {
-      "key": "影视蛙",
-      "name": "影视蛙",
+      "key": "柯南影视",
+      "name": "柯南影视",
       "type": 3,
-      "api": "./影视蛙.py",
+      "api": "./柯南影视.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -308,10 +308,10 @@
       "filterable": 1
     },
     {
-      "key": "52影院",
-      "name": "52影院",
+      "key": "界影院",
+      "name": "界影院",
       "type": 3,
-      "api": "./52影院_修复v4.py",
+      "api": "./界影视.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -326,10 +326,10 @@
       "filterable": 1
     },
     {
-      "key": "樱花视频",
-      "name": "樱花视频",
+      "key": "耐看点播",
+      "name": "耐看点播",
       "type": 3,
-      "api": "./yinghua.py",
+      "api": "./耐看点播.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -398,10 +398,10 @@
       "filterable": 1
     },
     {
-      "key": "520短剧修复版",
-      "name": "520短剧修复版",
+      "key": "荐片",
+      "name": "荐片",
       "type": 3,
-      "api": "./520短剧修复版.py",
+      "api": "./荐片.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -425,19 +425,19 @@
       "filterable": 1
     },
     {
-      "key": "红果短剧",
-      "name": "红果短剧",
+      "key": "聚合",
+      "name": "聚合",
       "type": 3,
-      "api": "./红果短剧🍀TG_fixed.py",
+      "api": "./聚合.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
     },
     {
-      "key": "红果漫剧",
-      "name": "红果漫剧",
+      "key": "莫小影",
+      "name": "莫小影",
       "type": 3,
-      "api": "./红果漫剧.py",
+      "api": "./莫小影.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
