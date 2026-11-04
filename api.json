@@ -29,10 +29,10 @@
       "filterable": 1
     },
     {
-      "key": "520短剧修复版",
-      "name": "520短剧修复版",
+      "key": "金牌",
+      "name": "金牌",
       "type": 3,
-      "api": "./520短剧修复版.py",
+      "api": "./金牌.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
