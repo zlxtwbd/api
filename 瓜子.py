@@ -1,13 +1,14 @@
+# coding = utf-8
+#!/usr/bin/python
 import re
 import sys
 import json
 import time
 import base64
 import hashlib
-import logging
-from collections import OrderedDict
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
-
+import random
+import string
+import urllib.parse
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from Crypto.PublicKey import RSA
@@ -16,18 +17,26 @@ from base.spider import Spider
 
 sys.path.append('..')
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
-
 class Spider(Spider):
     def __init__(self):
         self.name = "瓜子"
-        self.host = 'https://apinew.uozvr.com'
-        self.token = 'bc2f1d031b3eb444d84528b4dcce5e07.3e091c3550c1cb09899ac4013a76a7731f946f4461c9dd7c7c2ca1f9090dc4841c7e0168fed38d3312a8a38650edeef2e2d47f24c884bb3bd7005e1280f3b6eb2d36829134992c0ece8748ae5b85fa57a94d3d6e38faa44168d7f24e4a588424a6bee7779c18ade979353688e3c56fbdcf1d5590385f5f7ef6e01d1850974aa220eb5178c89e61c24411af9b9a19435e.ca9d8de0fa2798b5695845f64adbabeee3d38f39506170d5deda14add46d37f0'
-        self.aes_key = 'tOEryzJxZ8T385vS'
-        self.aes_iv = 'uqPY6IFCoiLOjA5M'
-        self.rsa_private_key = """-----BEGIN PRIVATE KEY-----
+        self.hosts = [
+            'https://apinew.uozvr.com',
+            'https://api.w32z7vtd.com',
+            'https://api.6a7nnf7.com',
+            'https://api.umygrx3.com',
+            'https://api.rmedphk.com'
+        ]
+        self.host_index = 0
+        self.host = self.hosts[self.host_index]
+
+        # AES 固定密钥（与Java版一致）
+        self.AES_KEY = 'OITxa5OqAYjhswxx'
+        self.AES_IV = 'rCMNwZASNBKZ8mXV'
+
+        # RSA 公钥/私钥
+        self.RSA_PUBLIC_KEY = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDUM5+/y8sPsWkd1/RQS64X259EUwxFXFE5HlA65MqrxnPs0JqoSRojSDy5QhwvROlaD6TwRQHKMY2OAZ6SnQeUJsChTEFIR9qUkwrs3/MVUMxjsv6JS6Oe/juclyJGTgVmDhB55EafXsD0SQYVj/QXXsxR6ewR5E2kL52yAAD4yQIDAQAB"
+        self.RSA_PRIVATE_KEY = """-----BEGIN RSA PRIVATE KEY-----
 MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGAe6hKrWLi1zQmjTT1
 ozbE4QdFeJGNxubxld6GrFGximxfMsMB6BpJhpcTouAqywAFppiKetUBBbXwYsYU
 1wNr648XVmPmCMCy4rY8vdliFnbMUj086DU6Z+/oXBdWU3/b1G0DN3E9wULRSwcK
@@ -42,22 +51,33 @@ jUJE8WAG7WLj/oCOWEh+ic6NIwTdAkEAj0X8nhx6AXsgCYRql1klbqtVmL8+95KZ
 K7PnLWG/IfjQUy3pPGoSaZ7fdquG8bq8oyf5+dzjE/oTXcByS+6XRQJAP/5ciy1b
 L3NhUhsaOVy55MHXnPjdcTX0FaLi+ybXZIfIQ2P4rb19mVq1feMbCXhz+L1rG8oa
 t5lYKfpe8k83ZA==
------END PRIVATE KEY-----"""
-        self.sign_keys = "QS9HiIvlxGT3HDFcXpj2M2+DC+yJxR3m/5sIQGLNISEQNSs6z+PzHCtC3IGpey72DBQ8cxLklnOMgqZUgPycruySDW0e7qWyyNlYPMw0Uc6PnSITLVvG8mRA+06QwhRr4qdY7pQfYVfSFd/bfn7d7UmM+SxnSwT+8uqF74r1lK4="
+-----END RSA PRIVATE KEY-----"""
+
+        self.DEVICE_OLD_KEY = "aLFBMWpxBrIDAD1Si/KVvm41"
+
+        # 设备信息（随机生成）
+        self.deviceId = str(864150060000000 + random.randint(0, 9999))
+        self.deviceKey = ''.join(random.choices('0123456789ABCDEF', k=40))  # 20字节hex大写
+        self.token = ""
+        self.token_id = ""
+        self.registered = False
 
         self.header = {
+            'User-Agent': 'Lavf/57.83.100',
+            'code': 'GZ0369',
+            'deviceId': self.deviceId,
+            'lang': 'zh_cn',
             'Cache-Control': 'no-cache',
-            'Version': '2406025',
-            'PackageName': 'com.uf076bf0c246.qe439f0d5e.m8aaf56b725a.ifeb647346f',
-            'Ver': '1.9.2',
-            'Referer': self.host,
             'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'okhttp/3.12.0'
+            'Version': '2604028',
+            'PackageName': 'com.ae06aebdbb.y286327f5a.ofe849883320260517',
+            'Ver': '3.0.3.2',
+            'api-ver': '3.0.3.2',
+            'Referer': self.host
         }
-
-        self.cache = OrderedDict()
-        self.cache_maxsize = 500
+        self.cache = {}
         self.cache_timeout = 300
+
 
     def getName(self):
         return self.name
@@ -65,6 +85,237 @@ t5lYKfpe8k83ZA==
     def init(self, extend=''):
         pass
 
+    # ---------- 设备注册与认证 ----------
+    def init_token(self):
+        """初始化token：注册设备 -> 刷新"""
+        print("===== 初始化设备认证 =====")
+        try:
+            if not self.registered:
+                self.sign_up()
+            # 刷新获取最终token
+            self.refresh_token()
+        except Exception as e:
+            print(f"初始化token失败: {e}")
+            # 兜底使用原有硬编码（几乎没用）
+            self.token = '024212ef0975c5306a1434e113a46463.bc77313e11a248558a6ca244ca980944ec3421fa480c50e0229ad91f1cb15aea582603202cd71796885c9e5163e500f1b72f737059aff1ddb8beea47c5a331d6760540345b7f88b2302a0e6e09589f9dcf3ff9175d8c905f990203f5fc04748008ea7a366571cbf5b09509a873dcfba3cf1d5590385f5f7ef6e01d1850974aa220eb5178c89e61c24411af9b9a19435e.06fde789ece48d9b33c5dc857e04e9b5838f08264d928b87237d3476c4484b46'
+
+    def sign_up(self):
+        """注册设备"""
+        print("注册新设备...")
+        params = {
+            "new_key": self.deviceKey,
+            "old_key": self.DEVICE_OLD_KEY,
+            "phone_type": 1,
+            "code": ""
+        }
+        result = self._auth_request('/App/Authentication/Device/signUp', params)
+        self._apply_auth(result)
+        self.registered = True
+
+    def sign_in(self):
+        """登录设备"""
+        print("设备登录...")
+        params = {
+            "new_key": self.deviceKey,
+            "old_key": self.DEVICE_OLD_KEY
+        }
+        result = self._auth_request('/App/Authentication/Device/signIn', params)
+        self._apply_auth(result)
+
+    def _apply_auth(self, result):
+        """从认证响应中提取token"""
+        new_token = result.get('token', '')
+        if not new_token:
+            raise Exception("认证失败，无token返回: {}".format(result))
+        self.token = new_token
+        new_token_id = result.get('app_user_id', '')
+        if new_token_id:
+            self.token_id = new_token_id
+        print(f"获取token成功, token前缀: {self.token[:30]}...")
+
+    def refresh_token(self):
+        """刷新token"""
+        print("刷新token...")
+        result = self._auth_request('/App/Authentication/Authenticator/refresh', {})
+        self._apply_auth(result)
+
+    def _auth_request(self, path, params):
+        """认证类请求（不需要ensure_token）"""
+        return self._send_encrypted_request(params, path, is_auth=True)
+
+    # ---------- 业务请求核心（修复加密与签名） ----------
+    def ensure_token(self):
+        """确保token有效，如未就绪则重新获取"""
+        if not self.token or not self.token_id:
+            if self.registered:
+                self.sign_in()
+            else:
+                self.sign_up()
+            self.refresh_token()
+
+    def _send_encrypted_request(self, data, path, is_auth=False):
+        """
+        发送加密请求，返回解密后的字典
+        :param data: 业务参数字典
+        :param path: 请求路径
+        :param is_auth: 是否为认证类请求（signUp/signIn/refresh），此时不使用ensure_token
+        """
+        try:
+            if not is_auth:
+                self.ensure_token()
+
+            # 1. 将参数转为JSON并AES加密
+            json_params = json.dumps(data)
+            encrypted = self.aes_encrypt(json_params, self.AES_KEY, self.AES_IV)
+            request_key = encrypted.upper()  # Java中是bytesToHex(encrypted).toUpperCase()
+
+            # 2. 生成keys (RSA加密 iv/key JSON)
+            key_json = json.dumps({"iv": self.AES_IV, "key": self.AES_KEY})
+            keys = self.rsa_encrypt(key_json, self.RSA_PUBLIC_KEY)
+
+            # 3. 生成签名
+            t = str(int(time.time()))
+            sign_str = f"token_id=,token={self.token},phone_type=1,request_key={request_key},app_id=1,time={t},keys={keys}*&zvdvdvddbfikkkumtmdwqppp?|4Y!s!2br"
+            signature = self.get_md5(sign_str)  # 已改为大写
+
+            # 4. 构建请求体
+            body = {
+                'token': self.token,
+                'token_id': '',
+                'phone_type': '1',
+                'time': t,
+                'phone_model': 'xiaomi-25031',  # 与Java版保持一致
+                'keys': keys,
+                'request_key': request_key,
+                'signature': signature,
+                'app_id': '1',
+                'ad_version': '1'
+            }
+
+            # 5. 发送请求
+            url = f"{self.host}{path}"
+            response = self.post(url, headers=self.header, data=body, timeout=10)
+
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}")
+
+            resp_json = response.json()
+            # 检查业务code（若不为200可能token过期）
+            if 'code' in resp_json and resp_json['code'] != 200:
+                print(f"业务错误码: {resp_json['code']}, 信息: {resp_json}")
+                # 如果不是认证请求，尝试重新获取token后重试一次（这里简单处理，外层get_data已有重试）
+                raise Exception("业务错误")
+
+            data_section = resp_json.get('data')
+            if not data_section:
+                raise Exception("响应缺少data字段")
+
+            encrypted_response = data_section.get('response_key', '')
+            encrypted_keys = data_section.get('keys', '')
+
+            # 6. 解密响应
+            decrypted_keys_json = self.rsa_decrypt(encrypted_keys, self.RSA_PRIVATE_KEY)
+            key_info = json.loads(decrypted_keys_json)
+            resp_key = key_info['key']
+            resp_iv = key_info['iv']
+            decrypted_data = self.aes_decrypt(encrypted_response, resp_key, resp_iv)
+            return json.loads(decrypted_data)
+
+        except Exception as e:
+            print(f"请求失败 [{path}]: {e}")
+            return None
+
+    def get_data(self, data, path, use_cache=True):
+        """带重试和域名轮询的数据获取（保持原框架）"""
+        try:
+            cache_key = f"{path}_{hash(str(data))}" if use_cache else None
+            if use_cache and cache_key in self.cache:
+                cached_data, timestamp = self.cache[cache_key]
+                if time.time() - timestamp < self.cache_timeout:
+                    return cached_data
+
+            for attempt in range(3):
+                tried = 0
+                while tried < len(self.hosts):
+                    self.host = self.hosts[self.host_index]
+                    self.header['Referer'] = self.host
+                    result = self._send_encrypted_request(data, path)
+                    if result is not None:
+                        print(f"请求成功: {path}, 域名: {self.host}")
+                        if use_cache and cache_key:
+                            self.cache[cache_key] = (result, time.time())
+                        return result
+
+                    # 切换到下一个域名
+                    self.host_index = (self.host_index + 1) % len(self.hosts)
+                    tried += 1
+
+                # 所有域名失败，尝试重新认证并重试
+                if attempt < 2:
+                    print("所有域名失败，尝试重新认证...")
+                    try:
+                        self.ensure_token()
+                    except:
+                        pass
+                    self.host_index = 0
+                else:
+                    break
+            return None
+        except Exception as e:
+            print(f"get_data异常: {e}")
+            return None
+
+    # ---------- 加解密工具 ----------
+    def aes_encrypt(self, text, key, iv):
+        try:
+            key_bytes = key.encode('utf-8')
+            iv_bytes = iv.encode('utf-8')
+            cipher = AES.new(key_bytes, AES.MODE_CBC, iv_bytes)
+            encrypted = cipher.encrypt(pad(text.encode('utf-8'), AES.block_size))
+            return encrypted.hex().upper()
+        except Exception as e:
+            print(f"AES加密失败: {e}")
+            return ""
+
+    def aes_decrypt(self, text, key, iv):
+        try:
+            key_bytes = key.encode('utf-8')
+            iv_bytes = iv.encode('utf-8')
+            cipher = AES.new(key_bytes, AES.MODE_CBC, iv_bytes)
+            encrypted_bytes = bytes.fromhex(text)
+            decrypted = unpad(cipher.decrypt(encrypted_bytes), AES.block_size)
+            return decrypted.decode('utf-8')
+        except Exception as e:
+            print(f"AES解密失败: {e}")
+            return ""
+
+    def rsa_encrypt(self, text, public_key_str):
+        """RSA公钥加密（PKCS1v1.5）"""
+        try:
+            key = RSA.import_key("-----BEGIN PUBLIC KEY-----\n" + public_key_str + "\n-----END PUBLIC KEY-----")
+            cipher = PKCS1_v1_5.new(key)
+            encrypted = cipher.encrypt(text.encode('utf-8'))
+            return base64.b64encode(encrypted).decode('utf-8')
+        except Exception as e:
+            print(f"RSA加密失败: {e}")
+            return ""
+
+    def rsa_decrypt(self, encrypted_data, private_key_str):
+        """RSA私钥解密"""
+        try:
+            encrypted_bytes = base64.b64decode(encrypted_data)
+            rsa_key = RSA.import_key(private_key_str)
+            cipher = PKCS1_v1_5.new(rsa_key)
+            decrypted = cipher.decrypt(encrypted_bytes, None)
+            return decrypted.decode('utf-8') if decrypted else ""
+        except Exception as e:
+            print(f"RSA解密失败: {e}")
+            return ""
+
+    def get_md5(self, text):
+        return hashlib.md5(text.encode()).hexdigest().upper()  # 与Java一致大写
+
+    # ---------- 业务方法（不变） ----------
     def homeContent(self, filter):
         result = {}
         classes = [
@@ -75,7 +326,6 @@ t5lYKfpe8k83ZA==
             {"type_name": "短剧", "type_id": "64"}
         ]
         result['class'] = classes
-
         filters = {}
         for cate in classes:
             tid = cate['type_id']
@@ -104,7 +354,23 @@ t5lYKfpe8k83ZA==
         return result
 
     def homeVideoContent(self):
-        return {'list': []}
+        videos = []
+        try:
+            body = {"area": "0", "year": "0", "pageSize": "30", "sort": "d_id", "page": "1", "tid": "0"}
+            data = self.get_data(body, '/App/IndexList/indexList', use_cache=False)
+            if data and 'list' in data:
+                for item in data['list']:
+                    vod_continu = item.get('vod_continu', 0)
+                    remarks = '电影' if vod_continu == 0 else f'更新至{vod_continu}集'
+                    videos.append({
+                        "vod_id": f"{item.get('vod_id', '')}/{vod_continu}",
+                        "vod_name": item.get('vod_name', ''),
+                        "vod_pic": item.get('vod_pic', ''),
+                        "vod_remarks": remarks
+                    })
+        except Exception as e:
+            print(f"获取首页推荐失败: {e}")
+        return {'list': videos}
 
     def categoryContent(self, tid, pg, filter, extend):
         videos = []
@@ -117,63 +383,33 @@ t5lYKfpe8k83ZA==
                 "page": str(pg),
                 "tid": tid
             }
-            data = self.get_data(body, '/App/IndexList/indexList')
+            cache_key = f"category_{tid}_{pg}_{hash(str(body))}"
+            data = self.get_cached_data(cache_key, body, '/App/IndexList/indexList')
             if data and 'list' in data:
                 for item in data['list']:
                     vod_continu = item.get('vod_continu', 0)
                     remarks = '电影' if vod_continu == 0 else f'更新至{vod_continu}集'
-                    videos.append({
-                        "vod_id": f"{item.get('vod_id', '')}|{vod_continu}",
+                    video = {
+                        "vod_id": f"{item.get('vod_id', '')}/{vod_continu}",
                         "vod_name": item.get('vod_name', ''),
                         "vod_pic": item.get('vod_pic', ''),
                         "vod_remarks": remarks
-                    })
-        except Exception:
-            logger.exception("获取分类内容失败")
-        return {
-            'list': videos,
-            'page': int(pg),
-            'pagecount': 9999,
-            'limit': 30,
-            'total': 999999
-        }
+                    }
+                    videos.append(video)
+        except Exception as e:
+            print(f"获取分类内容失败: {e}")
+        return {'list': videos, 'page': int(pg), 'pagecount': 9999, 'limit': 30, 'total': 999999}
 
     def detailContent(self, ids):
         try:
-            vod_id, vod_continu = ids[0].split('|', 1)
-        except ValueError:
-            vod_id = ids[0]
-            vod_continu = ''
-
-        try:
+            vod_id = ids[0].split('/')[0]
             t = str(int(time.time()))
-            body1 = {
-                "token_id": "1649412",
-                "vod_id": vod_id,
-                "mobile_time": t,
-                "token": self.token
-            }
-            body2 = {
-                "vurl_cloud_id": "2",
-                "vod_d_id": vod_id
-            }
-
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                future_q = executor.submit(self.get_data, body1, '/App/IndexPlay/playInfo')
-                future_j = executor.submit(self.get_data, body2, '/App/Resource/Vurl/show')
-                try:
-                    qdata = future_q.result(timeout=10)
-                    jdata = future_j.result(timeout=10)
-                except TimeoutError:
-                    logger.error("获取详情超时")
-                    return {'list': []}
-                except Exception as e:
-                    logger.exception("并发获取详情异常")
-                    return {'list': []}
-
+            body1 = {"token_id": self.token_id, "vod_id": vod_id, "mobile_time": t, "token": self.token}
+            qdata = self.get_data(body1, '/App/IndexPlay/playInfo')
+            body2 = {"vurl_cloud_id": "2", "vod_d_id": vod_id}
+            jdata = self.get_data(body2, '/App/Resource/Vurl/show')
             if not qdata or 'vodInfo' not in qdata:
                 return {'list': []}
-
             vod = qdata['vodInfo']
             video_detail = {
                 "vod_id": vod_id,
@@ -184,58 +420,45 @@ t5lYKfpe8k83ZA==
                 "vod_actor": vod.get('vod_actor', ''),
                 "vod_director": vod.get('vod_director', ''),
                 "vod_content": vod.get('vod_use_content', '').strip(),
-                "vod_play_from": "瓜子专线"
+                "vod_play_from": "瓜子影视"
             }
-
             play_list = []
             if jdata and 'list' in jdata:
                 for index, item in enumerate(jdata['list']):
                     if 'play' in item:
-                        names, params = [], []
-                        for k, v in item['play'].items():
-                            if 'param' in v and v['param']:
-                                names.append(k)
-                                params.append(v['param'])
-                        if params:
-                            play_name = str(index + 1) if len(jdata['list']) > 1 else vod.get('vod_name', '')
-                            play_url = f"{params[-1]}||{'@'.join(names)}"
+                        n, p = [], []
+                        for key, value in item['play'].items():
+                            if 'param' in value and value['param']:
+                                n.append(key)
+                                p.append(value['param'])
+                        if p:
+                            play_name = str(index + 1) if len(jdata['list']) != 1 else vod.get('vod_name', '')
+                            play_url = f"{p[-1]}||{'@'.join(n)}"
                             play_list.append(f"{play_name}${play_url}")
-
             video_detail["vod_play_url"] = "#".join(play_list)
             return {'list': [video_detail]}
-
-        except Exception:
-            logger.exception("获取详情失败")
+        except Exception as e:
+            print(f"获取详情失败: {e}")
             return {'list': []}
 
     def searchContent(self, key, quick, pg=1):
         videos = []
         try:
-            body = {
-                "keywords": key,
-                "order_val": "1",
-                "page": str(pg)
-            }
+            body = {"keywords": key, "order_val": "1", "page": str(pg)}
             data = self.get_data(body, '/App/Index/findMoreVod', use_cache=False)
             if data and 'list' in data:
                 for item in data['list']:
                     vod_continu = item.get('vod_continu', 0)
                     remarks = '电影' if vod_continu == 0 else f'更新至{vod_continu}集'
                     videos.append({
-                        "vod_id": f"{item.get('vod_id', '')}|{vod_continu}",
+                        "vod_id": f"{item.get('vod_id', '')}/{vod_continu}",
                         "vod_name": item.get('vod_name', ''),
                         "vod_pic": item.get('vod_pic', ''),
                         "vod_remarks": remarks
                     })
-        except Exception:
-            logger.exception("搜索失败")
-        return {
-            'list': videos,
-            'page': int(pg),
-            'pagecount': 9999,
-            'limit': 30,
-            'total': 999999
-        }
+        except Exception as e:
+            print(f"搜索失败: {e}")
+        return {'list': videos, 'page': int(pg), 'pagecount': 9999, 'limit': 30, 'total': 999999}
 
     def playerContent(self, flag, id, vipFlags):
         try:
@@ -244,33 +467,21 @@ t5lYKfpe8k83ZA==
                 return {"parse": 0, "playUrl": "", "url": ""}
             param_str = parts[0]
             resolutions = parts[1].split('@') if len(parts) > 1 else []
-
             params = {}
             for pair in param_str.split('&'):
                 if '=' in pair:
                     key, value = pair.split('=', 1)
                     params[key] = value
-
             if resolutions:
-                def safe_int(s):
-                    try:
-                        return int(s)
-                    except ValueError:
-                        return 0
-                resolutions.sort(key=safe_int, reverse=True)
+                resolutions.sort(key=lambda x: int(x) if x.isdigit() else 0, reverse=True)
                 params['resolution'] = resolutions[0]
-
                 data = self.get_data(params, '/App/Resource/VurlDetail/showOne', use_cache=False)
                 if data and 'url' in data:
-                    return {
-                        "parse": 0,
-                        "playUrl": "",
-                        "url": data['url'],
-                        "header": json.dumps({"User-Agent": "Lavf/57.83.100"})
-                    }
+                    return {"parse": 0, "playUrl": "", "url": data['url'],
+                            "header": json.dumps({"User-Agent": "Lavf/57.83.100", "Referer": "http://WJiZxLXA2.com/"}), 'danmaku': 'http://127.0.0.1:9978/proxy?do=diydanmu'}
             return {"parse": 0, "playUrl": "", "url": ""}
-        except Exception:
-            logger.exception("播放解析失败")
+        except Exception as e:
+            print(f"播放解析失败: {e}")
             return {"parse": 0, "playUrl": "", "url": ""}
 
     def isVideoFormat(self, url):
@@ -283,132 +494,16 @@ t5lYKfpe8k83ZA==
     def localProxy(self, params):
         return None
 
-    def aes_encrypt(self, text):
-        try:
-            cipher = AES.new(self.aes_key.encode('utf-8'), AES.MODE_CBC, self.aes_iv.encode('utf-8'))
-            encrypted = cipher.encrypt(pad(text.encode('utf-8'), AES.block_size))
-            return encrypted.hex().upper()
-        except Exception:
-            logger.exception("AES加密失败")
-            return ""
-
-    def aes_decrypt(self, hex_text, key, iv):
-        try:
-            cipher = AES.new(key.encode('utf-8'), AES.MODE_CBC, iv.encode('utf-8'))
-            decrypted = unpad(cipher.decrypt(bytes.fromhex(hex_text)), AES.block_size)
-            return decrypted.decode('utf-8')
-        except Exception:
-            logger.exception("AES解密失败")
-            return ""
-
-    def rsa_decrypt(self, encrypted_data):
-        try:
-            encrypted_bytes = base64.b64decode(encrypted_data)
-            rsa_key = RSA.import_key(self.rsa_private_key)
-            cipher = PKCS1_v1_5.new(rsa_key)
-            decrypted = cipher.decrypt(encrypted_bytes, None)
-            return decrypted.decode('utf-8') if decrypted else ""
-        except Exception:
-            logger.exception("RSA解密失败")
-            return ""
-
-    def _generate_sign(self, request_key, timestamp):
-        sign_str = (
-            f"token_id=,token={self.token},phone_type=1,"
-            f"request_key={request_key},app_id=1,time={timestamp},"
-            f"keys={self.sign_keys}*&zvdvdvddbfikkkumtmdwqppp?|4Y!s!2br"
-        )
-        return hashlib.md5(sign_str.encode()).hexdigest()
-
-    def _cache_cleanup(self):
-        now = time.time()
-        expired = [k for k, (_, ts) in self.cache.items() if now - ts > self.cache_timeout]
-        for k in expired:
-            del self.cache[k]
-        while len(self.cache) > self.cache_maxsize:
-            self.cache.popitem(last=False)
-
-    def get_data(self, data, path, use_cache=True):
-        cache_key = None
-        if use_cache:
-            raw = json.dumps(data, sort_keys=True)
-            cache_key = f"{path}:{hashlib.md5(raw.encode()).hexdigest()}"
-            self._cache_cleanup()
-            if cache_key in self.cache:
-                cached_result, timestamp = self.cache[cache_key]
-                if time.time() - timestamp < self.cache_timeout:
-                    return cached_result
-
-        try:
-            start_time = time.time()
-
-            request_key = self.aes_encrypt(json.dumps(data))
-            if not request_key:
-                return None
-
-            timestamp = str(int(time.time()))
-            signature = self._generate_sign(request_key, timestamp)
-
-            body = {
-                'token': self.token,
-                'token_id': '',
-                'phone_type': '1',
-                'time': timestamp,
-                'phone_model': 'xiaomi-22021211rc',
-                'keys': self.sign_keys,
-                'request_key': request_key,
-                'signature': signature,
-                'app_id': '1',
-                'ad_version': '1'
-            }
-
-            url = f"{self.host}{path}"
-            response = self.post(url, headers=self.header, data=body, timeout=10)
-            if response.status_code != 200:
-                logger.error(f"API请求失败: {response.status_code}, 路径: {path}")
-                return None
-
-            try:
-                response_data = response.json()
-            except ValueError:
-                logger.error(f"响应非JSON格式, 路径: {path}")
-                return None
-
-            if 'data' not in response_data:
-                logger.error(f"API返回数据缺少'data'字段, 路径: {path}")
-                return None
-
-            data_resp = response_data['data']
-
-            bodyki_json = self.rsa_decrypt(data_resp['keys'])
-            if not bodyki_json:
-                logger.error("RSA解密响应密钥失败")
-                return None
-            bodyki = json.loads(bodyki_json)
-
-            decrypted = self.aes_decrypt(data_resp['response_key'], bodyki['key'], bodyki['iv'])
-            if not decrypted:
-                logger.error("AES解密响应数据失败")
-                return None
-            result = json.loads(decrypted)
-
-            elapsed = time.time() - start_time
-            logger.info(f"数据获取成功, 耗时: {elapsed:.2f}s, 路径: {path}")
-
-            if use_cache and cache_key:
-                self.cache[cache_key] = (result, time.time())
-                self.cache.move_to_end(cache_key)
-                self._cache_cleanup()
-
-            return result
-
-        except Exception:
-            logger.exception(f"获取数据异常, 路径: {path}")
-            return None
-
-    def get_md5(self, text):
-        return hashlib.md5(text.encode()).hexdigest()
-
+    def get_cached_data(self, cache_key, data, path):
+        current_time = time.time()
+        if cache_key in self.cache:
+            cached_data, timestamp = self.cache[cache_key]
+            if current_time - timestamp < self.cache_timeout:
+                return cached_data
+        result = self.get_data(data, path)
+        if result:
+            self.cache[cache_key] = (result, current_time)
+        return result
 
 if __name__ == '__main__':
     pass
