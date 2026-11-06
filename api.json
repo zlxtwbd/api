@@ -83,10 +83,10 @@
       "filterable": 1
     },
     {
-      "key": "影视大全",
-      "name": "影视大全",
+      "key": "无水印资源",
+      "name": "无水印资源",
       "type": 3,
-      "api": "./影视大全.py",
+      "api": "./无水印资源_豆瓣版.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
