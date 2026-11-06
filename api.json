@@ -146,10 +146,10 @@
       "filterable": 1
     },
     {
-      "key": "云端影视",
-      "name": "云端影视",
+      "key": "555影视",
+      "name": "555影视",
       "type": 3,
-      "api": "./云端影视.py",
+      "api": "./555影视.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -164,19 +164,19 @@
       "filterable": 1
     },
     {
-      "key": "兔扫4k",
-      "name": "兔扫4k",
+      "key": "厂长资源",
+      "name": "厂长资源",
       "type": 3,
-      "api": "./兔扫4k.py",
+      "api": "./厂长资源.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
     },
     {
-      "key": "努努影院",
-      "name": "努努影院",
+      "key": "独播库",
+      "name": "独播库",
       "type": 3,
-      "api": "./努努影院.py",
+      "api": "./独播库.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -209,10 +209,10 @@
       "filterable": 1
     },
     {
-      "key": "周六影库",
-      "name": "周六影库",
+      "key": "热播",
+      "name": "热播",
       "type": 3,
-      "api": "./周六影库.py",
+      "api": "./热播.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -308,10 +308,10 @@
       "filterable": 1
     },
     {
-      "key": "界影院",
-      "name": "界影院",
+      "key": "一起看",
+      "name": "一起看",
       "type": 3,
-      "api": "./界影视.py",
+      "api": "./一起看.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -326,10 +326,10 @@
       "filterable": 1
     },
     {
-      "key": "耐看点播",
-      "name": "耐看点播",
+      "key": "6v点播",
+      "name": "6v点播",
       "type": 3,
-      "api": "./耐看点播.py",
+      "api": "./6v.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
