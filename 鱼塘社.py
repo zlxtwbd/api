@@ -1,281 +1,305 @@
-# coding=utf-8
-"""
-有广采王 —— 全网影视聚合爬虫（弹幕逻辑已抽离到独立模块 弹幕.py）
+# -*- coding: utf-8 -*-
+# 专属全网聚合 Python版
+# 适配常见 TVBox ok影视 鱼壳影视 羊壳PeekPro
 
-- 多源聚合（全球、厂长、母鸡、极速、百度、优质、红牛、魔都，共 8 源）
-- 已移除首页推荐视频列表（homeVideoContent 返回空）
-- 弹幕自动匹配委托给 弹幕.py 的 DanmakuMatcher（见 getDependence / init / detailContent / playerContent）
-"""
 import json
-import time
-import concurrent.futures
-from urllib.parse import quote
-
-from base.spider import Spider as BaseSpider
+import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from base.spider import Spider
 
 
-class SourceHTTPError(RuntimeError):
-    """资源站接口明确故障（请求失败 / 非 2xx）时抛出。
-
-    指南 §1.6：站点坏了要返回可诊断错误，不能伪装成空列表。
-    多源聚合场景会捕获它做降级，只有「所有源都坏」才向外抛。"""
-
-
-class Spider(BaseSpider):
-    SOURCES = {
-        '全球': {'name': '️全球', 'api': 'https://360zy.com/api.php/provide/vod/'},
-        '厂长': {'name': '️厂长', 'api': 'https://api.changzhang.tv/api.php/provide/vod/from/changzhangm3u8/'},
-        '母鸡': {'name': '️母鸡', 'api': 'https://mujiziyuan00.com/api.php/provide/vod/?ac=list'},
-        '极速': {'name': '极速', 'api': 'https://jszyapi.com/api.php/provide/vod/from/jsm3u8/at/json'},
-        '百度': {'name': '️百度', 'api': 'https://api.apibdzy.com/api.php/provide/vod/'},
-        '优质': {'name': '️优质', 'api': 'https://api.yyzy-tv.vip/inc/apijson.php'},
-        '红牛': {'name': '️红牛', 'api': 'https://www.hongniuzy3.com/api.php/provide/vod/from/hnm3u8/at/josn/'},
-        '魔都': {'name': '️魔都', 'api': 'https://www.mdzyapi.com/api.php/provide/vod/'}
+class Spider(Spider):
+    sources = {
+        's1': {'name': '🎬电影天堂', 'api': 'http://caiji.dyttzyapi.com/api.php/provide/vod/from/dyttm3u8/at/json'},
+        's2': {'name': '💧无水印', 'api': 'https://api.wsyzy.net/api.php/provide/vod'},
+        's3': {'name': '🧸量子', 'api': 'https://cj.lziapi.com/api.php/provide/vod'},
+        's4': {'name': '📺1080资源', 'api': 'https://api.1080zyku.com/inc/api_mac10.php'},
+        's5': {'name': '🔥155资源', 'api': 'https://155api.com/api.php/provide/vod'},
+        's6': {'name': '📺天涯', 'api': 'https://tyyszy.com/api.php/provide/vod/'},
+        's7': {'name': '📺暴风', 'api': 'https://bfzyapi.com/api.php/provide/vod/'},
+        's8': {'name': '⚡索尼闪电', 'api': 'https://xsd.sdzyapi.com/api.php/provide/vod/'},
+        's9': {'name': '📺索尼', 'api': 'https://suoniapi.com/api.php/provide/vod/'},
+        's10': {'name': '📺红牛', 'api': 'https://www.hongniuzy2.com/api.php/provide/vod/'},
+        's11': {'name': '📺茅台', 'api': 'https://caiji.maotaizy.cc/api.php/provide/vod/'},
+        's12': {'name': '🐯虎牙', 'api': 'https://www.huyaapi.com/api.php/provide/vod/'},
+        's13': {'name': '📺豆瓣', 'api': 'https://caiji.dbzy.tv/api.php/provide/vod/'},
+        's14': {'name': '📺豆瓣2', 'api': 'https://dbzy.tv/api.php/provide/vod/'},
+        's15': {'name': '📺豪华', 'api': 'https://hhzyapi.com/api.php/provide/vod/'},
+        's16': {'name': '📺如意影视', 'api': 'https://cj.rycjapi.com/api.php/provide/vod/'},
+        's17': {'name': '📺U酷', 'api': 'https://api.ukuapi.com/api.php/provide/vod'},
+        's18': {'name': '📺ikun', 'api': 'https://ikunzyapi.com/api.php/provide/vod'},
+        's19': {'name': '📺无尽', 'api': 'https://api.wujinapi.cc/api.php/provide/vod'},
+        's20': {'name': '🌕光速', 'api': 'https://api.guangsuapi.com/api.php/provide/vod'},
+        's21': {'name': '📺卧龙', 'api': 'https://collect.wolongzyw.com/api.php/provide/vod'},
+        's22': {'name': '📺新浪', 'api': 'https://api.xinlangapi.com/xinlangapi.php/provide/vod'},
+        's23': {'name': '📺旺旺', 'api': 'https://api.wwzy.tv/api.php/provide/vod'},
+        's24': {'name': '📺最大', 'api': 'https://api.zuidapi.com/api.php/provide/vod'},
+        's25': {'name': '🌸樱花', 'api': 'https://m3u8.apiyhzy.com/api.php/provide/vod'},
+        's26': {'name': '🐮牛牛', 'api': 'https://api.niuniuzy.me/api.php/provide/vod'},
+        's27': {'name': '☁️百度云', 'api': 'https://api.apibdzy.com/api.php/provide/vod'},
+        's28': {'name': '🏎速播', 'api': 'https://subocaiji.com/api.php/provide/vod'},
+        's29': {'name': '🦅金鹰', 'api': 'https://jinyingzy.com/api.php/provide/vod'},
+        's30': {'name': '⚡闪电', 'api': 'https://sdzyapi.com/api.php/provide/vod'},
+        's31': {'name': '👑非凡', 'api': 'https://cj.ffzyapi.com/api.php/provide/vod'},
+        's32': {'name': '🍃飘零', 'api': 'https://p2100.net/api.php/provide/vod'},
+        's33': {'name': '🐾魔爪', 'api': 'https://mozhuazy.com/api.php/provide/vod'},
+        's34': {'name': '📺魔都', 'api': 'https://www.mdzyapi.com/api.php/provide/vod'},
+        's35': {'name': '📺西瓜资源', 'api': 'https://caiji.xgzyapi.com/api.php/provide/vod/'},
+        's36': {'name': '📺98资源', 'api': 'https://98zy.vip/api.php/provide/vod/'},
+        's37': {'name': '🦊火狐影视', 'api': 'https://hhzyapi.com/api.php/provide/vod/'},
+        's38': {'name': '📺大众资源', 'api': 'https://cdn.dzzyapi.com/api.php/provide/vod/'},
     }
 
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    def getName(self):
+        return "影视+专属全网聚合"
+
     def init(self, extend=""):
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-        }
-        # 弹幕匹配器：独立模块 弹幕.py（详见 getDependence），由框架 loadModule 加载。
-        self.danmaku = self.loadModule("弹幕").DanmakuMatcher(self.net)
+        pass
 
-    def getDependence(self):
-        return ["弹幕"]
-
-    # ==================== 核心爬虫方法 ====================
-    def build_url(self, base, query):
-        if '?' in base:
-            if base.endswith('?') or base.endswith('&'):
-                return base + query
-            else:
-                return base + '&' + query
-        else:
-            return base + '?' + query
-
-    def fetch_json(self, url, timeout=10, strict=False):
-        """统一走 self.net.req；net.req 不抛，须手检 error 再检 code（指南 §3.3）。
-
-        strict=True 用于「单个源决定结果」的分类/详情：请求失败或非 2xx 抛
-        SourceHTTPError（403 / 风控页不能伪装成空列表，指南 §1.6）。
-        多源聚合（首页/搜索）用默认 False 降级跳过该源。
-        """
+    def fetch(self, url, timeout=8):
         try:
-            _ms = int(timeout * 1000)
-            response = self.net.req(url, {
-                "headers": self.headers,
-                "timeout": _ms,
-                "callTimeout": _ms,
-            })
-            if response.get("error"):
-                raise RuntimeError("请求失败: %s" % (response.get("error"),))
-            code = response.get("code", 0)
-            if not 200 <= code < 300:
-                raise RuntimeError("HTTP %s" % code)
-            content = response.get("content", "")
-            if isinstance(content, bytes):
-                content = content.decode("utf-8", errors="replace")
-            return json.loads(content)
-        except Exception as exc:
-            if strict:
-                raise SourceHTTPError("资源站接口异常：%s" % exc) from exc
-            return None
+            r = requests.get(
+                url,
+                headers=self.headers,
+                timeout=timeout,
+                verify=False
+            )
+            return r.text
+        except Exception:
+            return ""
 
     def clean_item(self, item, source_key, source_name, is_detail=False):
+        item = dict(item)
+
         if not is_detail:
-            item['vod_id'] = f"{source_key}@@{item['vod_id']}"
-        old_remark = item.get('vod_remarks', '')
-        item['vod_remarks'] = f"{source_name} | {old_remark}" if old_remark else source_name
-        item.pop('vod_down_from', None)
-        item.pop('vod_down_url', None)
+            item["vod_id"] = f"{source_key}@@{item.get('vod_id', '')}"
+
+        remarks = item.get("vod_remarks", "")
+        item["vod_remarks"] = f"{source_name} | {remarks}"
+
+        if item.get("vod_play_from"):
+            froms = item["vod_play_from"].split("$$$")
+            froms = [f"{source_name}-{x}" for x in froms]
+            item["vod_play_from"] = "$$$".join(froms)
+
+        item.pop("vod_down_from", None)
+        item.pop("vod_down_url", None)
+
         return item
 
-    def homeContent(self, filter=False):
+    def homeContent(self, filter):
         classes = []
         filters = {}
-        def fetch_class(source_key, source_info):
-            url = self.build_url(source_info['api'], "ac=list")
-            data = self.fetch_json(url, timeout=4)
-            return source_key, source_info, data
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            futures = {executor.submit(fetch_class, k, v): k for k, v in self.SOURCES.items()}
-            for future in concurrent.futures.as_completed(futures):
-                source_key, source_info, data = future.result()
-                classes.append({'type_id': source_key, 'type_name': source_info['name']})
-                filter_values = [{'n': '全部(最新)', 'v': ''}]
-                if data and 'class' in data:
-                    for c in data['class']:
-                        filter_values.append({'n': c['type_name'], 'v': c['type_id']})
-                filters[source_key] = [{'key': 'cateId', 'name': '分类', 'value': filter_values}]
-        return {'class': classes, 'filters': filters, 'list': []}
 
-    def homeVideoContent(self):
-        return {'list': []}
+        def load_class(key, source):
+            url = f"{source['api']}?ac=list"
+            html = self.fetch(url, 4)
 
-    def categoryContent(self, tid, pg=1, filter=False, extend=None):
-        if tid not in self.SOURCES:
-            return {'list': [], 'page': pg, 'pagecount': 0, 'limit': 20, 'total': 0}
-        source = self.SOURCES[tid]
-        if extend is None:
-            extend = {}
-        real_tid = extend.get('cateId', '')
-        query = f"ac=detail&pg={pg}"
-        if real_tid:
-            query += f"&t={real_tid}"
-        url = self.build_url(source['api'], query)
-        # 分类只由这一个源决定结果：接口故障必须抛错，不能伪装成"这页没内容"
-        data = self.fetch_json(url, timeout=10, strict=True)
-        if not data:
-            return {'list': [], 'page': pg, 'pagecount': 0, 'limit': 20, 'total': 0}
-        video_list = []
-        for item in data.get('list', []):
-            video_list.append(self.clean_item(item, tid, source['name'], is_detail=False))
+            try:
+                data = json.loads(html)
+            except:
+                data = {}
+
+            vals = [{"n": "全部(最新)", "v": ""}]
+
+            for c in data.get("class", []):
+                vals.append({
+                    "n": c.get("type_name", ""),
+                    "v": c.get("type_id", "")
+                })
+
+            return key, vals
+
+        with ThreadPoolExecutor(max_workers=16) as executor:
+            futures = []
+
+            for key, source in self.sources.items():
+                classes.append({
+                    "type_id": key,
+                    "type_name": source["name"]
+                })
+
+                futures.append(executor.submit(load_class, key, source))
+
+            for future in as_completed(futures):
+                try:
+                    key, vals = future.result()
+
+                    filters[key] = [{
+                        "key": "cateId",
+                        "name": "分类",
+                        "value": vals
+                    }]
+                except:
+                    pass
+
         return {
-            'list': video_list,
-            'page': data.get('page', pg),
-            'pagecount': data.get('pagecount', 0),
-            'limit': data.get('limit', 20),
-            'total': data.get('total', 0)
+            "class": classes,
+            "filters": filters,
+            "list": []
+        }
+
+    def categoryContent(self, tid, pg, filter, extend):
+        if tid not in self.sources:
+            return {"list": []}
+
+        source = self.sources[tid]
+
+        cate_id = ""
+        if isinstance(extend, dict):
+            cate_id = extend.get("cateId", "")
+
+        url = f"{source['api']}?ac=detail&pg={pg}"
+
+        if cate_id:
+            url += f"&t={cate_id}"
+
+        html = self.fetch(url)
+
+        try:
+            data = json.loads(html)
+        except:
+            data = {}
+
+        result = []
+
+        for item in data.get("list", []):
+            result.append(
+                self.clean_item(
+                    item,
+                    tid,
+                    source["name"],
+                    False
+                )
+            )
+
+        return {
+            "list": result,
+            "page": data.get("page", pg),
+            "pagecount": data.get("pagecount", 1),
+            "limit": data.get("limit", 20),
+            "total": data.get("total", len(result))
         }
 
     def detailContent(self, ids):
-        # 指南 §2.2：入参是 ID 列表，须保序、不去重、处理完整集合（旧版只读 ids[0]）
-        if not ids:
-            return {'list': []}
-        result_list = []
-        errors = []
-        for full_id in ids:
-            if '@@' not in full_id:
-                continue
-            source_key, real_id = full_id.split('@@', 1)
-            source = self.SOURCES.get(source_key)
-            if not source:
-                continue
-            url = self.build_url(source['api'], f"ac=detail&ids={real_id}")
-            try:
-                data = self.fetch_json(url, timeout=10, strict=True)
-            except SourceHTTPError as exc:
-                # 单个源故障先降级，只有「全部故障且无任何结果」才向外抛
-                errors.append(str(exc))
-                continue
-            if not isinstance(data, dict) or not isinstance(data.get('list'), list):
-                continue  # 结构完整但没有条目 = 真空，返回空即可
-            for item in data['list']:
-                cleaned = self.clean_item(item, source_key, source['name'], is_detail=True)
-                cleaned['vod_id'] = full_id
-                result_list.append(cleaned)
-        if errors and not result_list:
-            raise SourceHTTPError("全部资源站详情接口异常：%s" % errors[0])
-        # 弹幕上下文同时只跟随一个播放对象，取结果集首条；构建失败不影响详情页
-        if result_list:
-            try:
-                self.danmaku.build_context(result_list[0])
-            except Exception:
-                pass
-        return {'list': result_list}
+        if isinstance(ids, list):
+            ids = ids[0]
 
-    def searchContent(self, key, quick, pg="1"):
-        keyword = key.strip()
-        if not keyword:
-            return {'list': [], 'page': pg, 'pagecount': 0, 'limit': 40, 'total': 0}
-        encoded_keyword = quote(keyword)
-        def search_source(source_key, source_info):
-            test_urls = [
-                self.build_url(source_info['api'], f"ac=detail&wd={encoded_keyword}&pg={pg}"),
-                self.build_url(source_info['api'], f"ac=list&wd={encoded_keyword}&pg={pg}")
-            ]
-            got_response = False
-            for url in test_urls:
-                data = self.fetch_json(url, timeout=8)
-                if data is None:
-                    continue
-                # 至少拿到一次合法响应：用于区分「全站故障」与「确实搜不到」
-                got_response = True
-                if not data:
-                    continue
-                items = None
-                if isinstance(data, dict):
-                    if 'list' in data:
-                        items = data['list']
-                    elif 'data' in data and isinstance(data['data'], dict) and 'list' in data['data']:
-                        items = data['data']['list']
-                    elif 'data' in data and isinstance(data['data'], list):
-                        items = data['data']
-                if items:
-                    return source_key, source_info, data, items, True
-            return source_key, source_info, None, [], got_response
-        all_items = []
-        max_pagecount = 0
-        ok_sources = 0
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            futures = {executor.submit(search_source, k, v): k for k, v in self.SOURCES.items()}
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    source_key, source_info, data, items, ok = future.result()
-                except Exception:
-                    continue
-                if ok:
-                    ok_sources += 1
-                if items:
-                    for item in items:
-                        try:
-                            if not isinstance(item, dict) or not item.get('vod_id'):
-                                continue
-                            all_items.append(self.clean_item(item, source_key, source_info['name'], is_detail=False))
-                        except Exception:
-                            pass
-                    # 少数源返回的是 list，不能对非 dict 调 .get()
-                    if isinstance(data, dict) and data.get('pagecount', 0) > max_pagecount:
-                        max_pagecount = data.get('pagecount', 0)
-        # 所有源都不可达时不能伪装成「没有搜索结果」（指南 §1.6）
-        if ok_sources == 0:
-            raise SourceHTTPError("全部资源站搜索接口不可达或返回异常")
-        seen = set()
-        unique = []
-        for v in all_items:
-            if v['vod_id'] not in seen:
-                seen.add(v['vod_id'])
-                unique.append(v)
+        if "@@" not in ids:
+            return {"list": []}
+
+        source_key, real_id = ids.split("@@", 1)
+
+        if source_key not in self.sources:
+            return {"list": []}
+
+        source = self.sources[source_key]
+
+        url = f"{source['api']}?ac=detail&ids={real_id}"
+
+        html = self.fetch(url)
+
+        try:
+            data = json.loads(html)
+        except:
+            data = {}
+
+        result = []
+
+        for item in data.get("list", []):
+            cleaned = self.clean_item(
+                item,
+                source_key,
+                source["name"],
+                True
+            )
+
+            cleaned["vod_id"] = ids
+
+            result.append(cleaned)
+
+        return {"list": result}
+
+    def search_one(self, source_key, source, keyword, pg):
+        url = f"{source['api']}?ac=detail&wd={keyword}&pg={pg}"
+
+        html = self.fetch(url, 6)
+
+        try:
+            data = json.loads(html)
+        except:
+            data = {}
+
+        result = []
+
+        for item in data.get("list", []):
+            result.append(
+                self.clean_item(
+                    item,
+                    source_key,
+                    source["name"],
+                    False
+                )
+            )
+
         return {
-            'list': unique,
-            'page': pg,
-            'pagecount': max_pagecount if max_pagecount else 1,
-            'limit': 40,
-            # 指南 §1.5：total 只填精确总数，绝不估算。这里是多站当页结果合并去重后的
-            # 精确条数（不再是 9999 这种拍脑袋值）；能否翻页由 page < pagecount 决定。
-            'total': len(unique)
+            "list": result,
+            "pagecount": data.get("pagecount", 1)
         }
 
-    def playerContent(self, flag, id, vipFlags=None):
-        # ===== 弹幕：播放后异步匹配 + 推送本地桥（本版本不要求中文名）=====
-        # match() 只起后台线程、立即返回，播放前零阻塞；匹配结果由弹幕.py 推送到
-        # 127.0.0.1:9978/action?do=refresh&type=danmaku&path=<弹幕url>。
-        # 不再返回 danmaku 数组（那是上一版为承载中文名用的，本版不需要）。
-        try:
-            self.danmaku.match(id)
-        except Exception:
-            pass
-        # header 保持 dict：指南 §2.6 的 parse:0 示例用 json.dumps 字符串，而 §4 的
-        # parse:1 央视频案例直接给 dict，两种写法宿主都接受；此处不改，避免无谓回归。
-        result = {
-            'parse': 0,
-            'url': id,
-            'header': {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-            }
+    def searchContent(self, key, quick=False, pg=1):
+        result = []
+        max_page = 1
+
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            futures = []
+
+            for source_key, source in self.sources.items():
+                futures.append(
+                    executor.submit(
+                        self.search_one,
+                        source_key,
+                        source,
+                        key,
+                        pg
+                    )
+                )
+
+            for future in as_completed(futures):
+                try:
+                    data = future.result()
+
+                    result.extend(data["list"])
+
+                    if data["pagecount"] > max_page:
+                        max_page = data["pagecount"]
+
+                except:
+                    pass
+
+        return {
+            "list": result,
+            "page": pg,
+            "pagecount": max_page,
+            "limit": 40,
+            "total": 9999
         }
-        return result
 
-    def isVideoFormat(self, url):
-        return False
+    def playerContent(self, flag, id, vipFlags):
+        return {
+            "parse": 0,
+            "playUrl": "",
+            "url": id,
+            "header": self.headers
+        }
 
-    def manualVideoCheck(self):
-        return False
+    def localProxy(self, param):
+        return [200, "text/plain", "ok"]
 
-    def destroy(self):
-        # 切源/退出时作废后台匹配线程、清空上下文（弹幕模块 reset() 本就是为此写的）
-        try:
-            if getattr(self, 'danmaku', None) is not None:
-                self.danmaku.reset()
-        except Exception:
-            pass
+
+if __name__ == "__main__":
+    Spider().run()
