@@ -64,6 +64,148 @@
       "quickSearch": 1,
       "filterable": 1
     },
+     {
+            "key": "八戒影视[APP]",
+            "name": "八戒影视[APP]",
+            "type": 3,
+            "api": "./八戒影视.py"
+        },
+        {
+            "key": "壹影视[APP]",
+            "name": "壹影视[APP]",
+            "type": 3,
+            "api": "./壹影视.py"
+        },
+        {
+            "key": "剧迷TV[APP]",
+            "name": "剧迷TV[APP]",
+            "type": 3,
+            "api": "./看客TV.py",
+            "ext": {
+                "CosUrl": "http://2025-1329689796.cos.ap-guangzhou.myqcloud.com/jumi1.0/app1.json"
+            }
+        },
+        {
+            "key": "欣欣影视[XinJie]",
+            "name": "欣欣影视[XinJie]",
+            "type": 3,
+            "api": "./XinJie.py",
+            "ext": {
+                "host": "usv46c9uRCE/PugcvJY1Pc/BM6KQv8vKYzpgVFmTPv8wdb18jQRMx9ElUPtnlHCd",
+                "key": "505cab36b1111416",
+                "iv": "0e832063ac451b27"
+            }
+        },
+        {
+            "key": "咕噜映画[Appfox]",
+            "name": "咕噜映画[Appfox]",
+            "type": 3,
+            "changeable": 0,
+            "api": "./Appfox.py",
+            "ext": {
+                "host": "http://www.yingsw.top",
+                "timeout": 8,
+                "ver": 3
+            }
+        },
+        {
+            "key": "全影视PRO[FeiApp]",
+            "name": "全影视PRO[FeiApp]",
+            "type": 3,
+            "changeable": 0,
+            "api": "./FeiApp.py",
+            "ext": "http://ysb.yy-fun.cc/feiapp"
+        },
+        {
+            "key": "番喜[ApptoV5]",
+            "name": "番喜[ApptoV5]",
+            "type": 3,
+            "api": "./ApptoV5无加密.py",
+            "ext": "http://118.89.203.120:8762"
+        },
+        {
+            "key": "BILFUN影视大全[AppMuou]",
+            "name": "BILFUN影视大全[AppMuou]",
+            "type": 3,
+            "api": "./AppMuou.py",
+            "ext": {
+                "host": "http://physical.centos.chat",
+                "api": "/info.php",
+                "name": "BILFUN影视大全",
+                "version": "4.1.8"
+            }
+        },
+        {
+            "key": "星马视[AppV2]",
+            "name": "星马视[AppV2]",
+            "type": 3,
+            "api": "./AppV2.py",
+            "ext": "http://xingma.apidge.com/icciu_api.php/v1.vod"
+        },
+        {
+            "key": "gotto[AppV2]",
+            "name": "gotto[AppV2]",
+            "type": 3,
+            "api": "./AppV2.py",
+            "ext": {
+                "api": "http://m51.gotto.top/api.php/v1.vod",
+                "ua": "okhttp/4.1.0"
+            }
+        },
+        {
+            "key": "咕咕动漫[getapp3]",
+            "name": "咕咕动漫[getapp3]",
+            "type": 3,
+            "api": "./getapp3.4.6.py",
+            "ext": {
+                "host": "https://www.gugu3.com",
+                "key": "nKfZ8KX6JTNWRzTD"
+            }
+        },
+        {
+            "key": "jxsp[Hmys]",
+            "name": "九霄视频[Hmys]",
+            "type": 3,
+            "api": "./Hmys.py",
+            "ext": {
+                "host": "https://dy.stxbed.com",
+                "app_id": "jiuxiao",
+                "versionCode": "10000",
+                "UMENG_CHANNEL": "guan"
+            }
+        },
+        {
+            "key": "YIYI影视[99APP]",
+            "name": "YIYI影视[99APP]",
+            "type": 3,
+            "api": "./99APP2.py",
+            "ext": {
+                "host": "http://99app.appttt.cn",
+                "appkey": "835013444649af6d88aca7bdf1846e56",
+                "version": "bfc18c00-c866-46cb-8d7b-121c39b942d4",
+                "versionName": "2.0.0",
+                "name": "YIYI影视",
+                "package": "com.yingfu.mobile.android.yiyiys",
+                "buildNumber": "2001",
+                "buildSignature": "CBDA00CF3F8921712231DA40AE69E446487CF4238D9EA976C6B4A729DA7F0995"
+            }
+        },
+        {
+            "key": "落攻阁影视[99APP]",
+            "name": "落攻阁影视[99APP]",
+            "type": 3,
+            "api": "./99APP2.py",
+            "ext": {
+                "host": "https://api.jciyuan.com",
+                "appkey": "5ac60e53fbe93a890f0851fef0009d38",
+                "version": "bfc18c00-c866-46cb-8d7b-121c39b942d4",
+                "versionName": "6.1.0",
+                "name": "落攻阁影视",
+                "package": "com.yuaiweiwu.aixue.lggys",
+                "buildNumber": "2001",
+                "buildSignature": "CBDA00CF3F8921712231DA40AE69E446487CF4238D9EA976C6B4A729DA7F0995"
+            }
+        },
     {
       "key": "DJUU",
       "name": "DJUU",
@@ -96,15 +238,6 @@
       "name": "HMDJ",
       "type": 3,
       "api": "./HMDJ.py",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
-      "key": "YY",
-      "name": "YY",
-      "type": 3,
-      "api": "./YY.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -218,24 +351,6 @@
       "filterable": 1
     },
     {
-      "key": "爱瓜影视",
-      "name": "爱瓜影视",
-      "type": 3,
-      "api": "./爱瓜影视.py",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
-      "key": "奈飞工厂",
-      "name": "奈飞工厂",
-      "type": 3,
-      "api": "./奈飞工厂.py",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
       "key": "枫叶4k",
       "name": "枫叶4k",
       "type": 3,
@@ -299,37 +414,10 @@
       "filterable": 1
     },
     {
-      "key": "芭蕉剧场",
-      "name": "芭蕉剧场",
-      "type": 3,
-      "api": "./芭蕉剧场.py",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
-      "key": "一起看",
-      "name": "一起看",
-      "type": 3,
-      "api": "./一起看.py",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
       "key": "影探4K",
       "name": "影探4K",
       "type": 3,
       "api": "./影探4K.py",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
-      "key": "6v点播",
-      "name": "6v点播",
-      "type": 3,
-      "api": "./6v.py",
       "searchable": 1,
       "quickSearch": 1,
       "filterable": 1
@@ -398,42 +486,6 @@
       "filterable": 1
     },
     {
-      "key": "荐片",
-      "name": "荐片",
-      "type": 3,
-      "api": "./荐片.py",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
-      "key": "红果短剧能看全集",
-      "name": "红果短剧能看全集",
-      "type": 3,
-      "api": "./红果短剧能看全集.py",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
-      "key": "红果短剧最终版",
-      "name": "红果短剧最终版",
-      "type": 3,
-      "api": "./红果短剧最终版.py",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
-      "key": "聚合",
-      "name": "聚合",
-      "type": 3,
-      "api": "./聚合.py",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1
-    },
-    {
       "key": "埋堆堆",
       "name": "埋堆堆",
       "type": 3,
@@ -443,7 +495,7 @@
       "filterable": 1
     },
     {
-      "key": "黄豆短剧",
+      "key": "央视频双源",
       "name": "央视频双源",
       "type": 3,
       "api": "./央视频双源.py",
